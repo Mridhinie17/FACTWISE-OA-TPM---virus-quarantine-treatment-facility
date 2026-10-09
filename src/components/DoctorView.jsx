@@ -2,19 +2,14 @@ import React, { useState } from 'react';
 import { 
   Stethoscope, 
   ShieldAlert, 
-  Clock, 
   CheckCircle, 
   AlertCircle, 
   UserCheck, 
   LogOut, 
-  Activity, 
   FileText, 
   ChevronDown, 
   ChevronUp, 
-  ArrowRight,
-  Flame,
   MinusCircle,
-  HelpCircle,
   Lock
 } from 'lucide-react';
 import { soundFx } from '../utils/soundFx';
@@ -33,7 +28,7 @@ export default function DoctorView({
   const [consultNotesInput, setConsultNotesInput] = useState('');
   const [showUnloggedSection, setShowUnloggedSection] = useState(true);
 
-  // Ready for Doctor: Patients with morning temp logged (AWAITING_DOCTOR, EVALUATED, DISCHARGE_PENDING)
+  // Ready for Doctor: Patients with morning temp logged
   const readyPatients = patients.filter(
     p => p.state === PATIENT_STATES.AWAITING_DOCTOR || 
          p.state === PATIENT_STATES.EVALUATED ||
@@ -58,7 +53,7 @@ export default function DoctorView({
       onRemoveClinicalHold(patient.id);
     } else {
       soundFx.playWarning();
-      const reason = holdReasonInput.trim() || 'Clinically unstable despite normothermia (Requires serial observation)';
+      const reason = holdReasonInput.trim() || 'Clinically unstable despite normal temperature';
       onAddClinicalHold(patient.id, reason);
     }
   };
@@ -82,44 +77,28 @@ export default function DoctorView({
 
   return (
     <div className="doctor-container">
-      {/* Top Banner / Philosophy Header */}
-      <div className="role-subhead">
-        <div className="role-badge-row">
-          <span className="doctor-role-pill">
-            <Stethoscope size={16} />
-            ROLE 02: ATTENDING PHYSICIAN
-          </span>
-          <span className="protect-minutes-badge">
-            <Clock size={14} /> Zero Wait-Time: Doctor Minutes Protected
-          </span>
+      {/* Top Header */}
+      <div className="view-header">
+        <div className="view-title-group">
+          <h2>Doctor Rounds</h2>
+          <span className="view-badge">Attending Physician</span>
         </div>
 
-        <div className="queue-metric-bar">
-          <div className="metric-box">
-            <span className="metric-label">Vitals Ready for Consult</span>
-            <span className="metric-val text-cyan">{readyPatients.length} Patients</span>
+        <div className="metrics-summary-row">
+          <div className="stat-pill stat-pill-done">
+            <span className="stat-pill-num">{readyPatients.length}</span>
+            <span className="stat-pill-label">Ready for Consult</span>
           </div>
-          <div className="metric-box">
-            <span className="metric-label">Locked / Needs Nurse</span>
-            <span className="metric-val text-rose">{unloggedPatients.length} Rooms</span>
+          <div className="stat-pill stat-pill-pending">
+            <span className="stat-pill-num">{unloggedPatients.length}</span>
+            <span className="stat-pill-label">Awaiting Vitals</span>
           </div>
-          <div className="metric-box">
-            <span className="metric-label">Active Clinical Holds</span>
-            <span className="metric-val text-amber">
-              {readyPatients.filter(p => p.clinicalHold).length} Flagged
+          <div className="stat-pill stat-pill-hold">
+            <span className="stat-pill-num">
+              {readyPatients.filter(p => p.clinicalHold).length}
             </span>
+            <span className="stat-pill-label">Clinical Holds</span>
           </div>
-        </div>
-      </div>
-
-      {/* Engineering Callout */}
-      <div className="role-engineering-card doctor-card-border">
-        <div className="role-card-icon">
-          <Activity size={20} className="text-cyan" />
-        </div>
-        <div className="role-card-text">
-          <strong>Protected Attending Workflow:</strong>
-          <span> Attending physicians only see rooms with verified morning vitals. Rooms lacking data are barred with "Do Not Enter" shields to eliminate wasted clinician footsteps. Clinical Holds allow instant override for normothermic but decompensating cases.</span>
         </div>
       </div>
 
@@ -127,15 +106,15 @@ export default function DoctorView({
         {/* Left Column: Physician Inbox */}
         <div className="doctor-inbox-column">
           <div className="column-header">
-            <h3>Attending Rounds Inbox</h3>
-            <span className="inbox-count-tag">{readyPatients.length} Vitals Secured</span>
+            <h3>Patient Inbox</h3>
+            <span className="badge-count">{readyPatients.length} Verified</span>
           </div>
 
           <div className="doctor-inbox-list">
             {readyPatients.length === 0 ? (
-              <div className="empty-inbox-placeholder">
-                <CheckCircle size={32} className="text-emerald" />
-                <p>All ready patients have been evaluated or transferred.</p>
+              <div className="empty-box">
+                <CheckCircle size={28} className="text-forest" />
+                <p>No patients currently pending evaluation.</p>
               </div>
             ) : (
               readyPatients.map((patient) => {
@@ -147,48 +126,38 @@ export default function DoctorView({
                 return (
                   <div
                     key={patient.id}
-                    className={`doctor-patient-card ${isSelected ? 'selected-doctor-card' : ''} ${patient.clinicalHold ? 'card-has-hold' : ''}`}
+                    className={`doctor-patient-card ${isSelected ? 'selected' : ''} ${patient.clinicalHold ? 'has-hold' : ''}`}
                     onClick={() => handleSelectPatient(patient)}
                   >
                     <div className="doctor-card-top">
-                      <div className="room-and-patient">
-                        <span className="doc-room-pill">{patient.room}</span>
-                        <strong className="doc-patient-name">{patient.name}</strong>
+                      <div>
+                        <span className="room-label">{patient.room}</span>
+                        <h4 className="patient-name">{patient.name}</h4>
                       </div>
-                      <div className="vitals-display-badge">
-                        <span className={`temp-val-badge ${isFever ? 'temp-fever' : 'temp-normal'}`}>
-                          {patient.temperature}°F
-                        </span>
-                      </div>
+                      <span className={`temp-badge ${isFever ? 'temp-fever' : 'temp-normal'}`}>
+                        {patient.temperature}°F
+                      </span>
                     </div>
 
-                    <div className="doc-patient-condition">
+                    <div className="patient-condition">
                       {patient.diagnosis}
                     </div>
 
-                    <div className="doc-card-footer">
-                      <div className="vitals-audit-trail">
-                        <span>Logged {patient.tempLoggedAt} by {patient.tempLoggedBy}</span>
-                      </div>
+                    <div className="doctor-card-bottom">
+                      <span className="vitals-meta">
+                        {patient.tempLoggedAt} • {patient.tempLoggedBy}
+                      </span>
 
-                      <div className="status-tags-cluster">
+                      <div className="status-badges">
                         {patient.clinicalHold && (
-                          <span className="tag-clinical-hold">
-                            <ShieldAlert size={12} /> CLINICAL HOLD
-                          </span>
+                          <span className="badge-hold">Clinical Hold</span>
                         )}
                         {isDischargePending ? (
-                          <span className="tag-discharge-pending">
-                            <LogOut size={12} /> DISCHARGE SENT TO ADMIN
-                          </span>
+                          <span className="badge-discharged">Discharge Sent</span>
                         ) : isEvaluated ? (
-                          <span className="tag-evaluated">
-                            <UserCheck size={12} /> CONSULTED
-                          </span>
+                          <span className="badge-consulted">Consulted</span>
                         ) : (
-                          <span className="tag-ready-consult">
-                            <Stethoscope size={12} /> READY FOR ROUNDS
-                          </span>
+                          <span className="badge-ready">Ready</span>
                         )}
                       </div>
                     </div>
@@ -198,15 +167,15 @@ export default function DoctorView({
             )}
           </div>
 
-          {/* Explicitly Labeled "Awaiting Nurse - Do Not Enter" Section */}
-          <div className="blocked-rooms-section">
+          {/* Blocked Rooms Section (Awaiting Nurse) */}
+          <div className="blocked-rooms-container">
             <button 
-              className="toggle-blocked-btn"
+              className="blocked-toggle-header"
               onClick={() => setShowUnloggedSection(!showUnloggedSection)}
             >
-              <div className="btn-left">
-                <ShieldAlert size={16} className="text-rose" />
-                <span>BLOCKED ROOMS: AWAITING NURSE VITALS ({unloggedPatients.length})</span>
+              <div className="header-left">
+                <ShieldAlert size={16} className="text-amber" />
+                <span>Rooms Awaiting Vitals ({unloggedPatients.length})</span>
               </div>
               {showUnloggedSection ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             </button>
@@ -214,18 +183,18 @@ export default function DoctorView({
             {showUnloggedSection && (
               <div className="blocked-rooms-list">
                 {unloggedPatients.length === 0 ? (
-                  <div className="all-vitals-in">All morning vitals entered! No blocked rooms.</div>
+                  <div className="empty-subtext">All morning vitals recorded.</div>
                 ) : (
                   unloggedPatients.map((p) => (
-                    <div key={p.id} className="blocked-room-item">
-                      <div className="blocked-room-left">
-                        <Lock size={14} className="text-rose" />
-                        <span className="blocked-room-tag">{p.room}</span>
-                        <span className="blocked-patient-name">{p.name} ({p.diagnosis})</span>
+                    <div key={p.id} className="blocked-room-row">
+                      <div className="room-info">
+                        <Lock size={13} className="text-muted" />
+                        <strong>{p.room}</strong>
+                        <span>{p.name}</span>
                       </div>
-                      <div className="blocked-badge-warning">
-                        ⚠️ AWAITING NURSE — DO NOT ENTER
-                      </div>
+                      <span className="blocked-warning-tag">
+                        Awaiting Nurse — Do Not Enter
+                      </span>
                     </div>
                   ))
                 )}
@@ -234,135 +203,112 @@ export default function DoctorView({
           </div>
         </div>
 
-        {/* Right Column: Detailed Clinical Evaluation & Override Panel */}
+        {/* Right Column: Clinical Evaluation & Controls */}
         <div className="doctor-eval-column">
           {selectedPatient ? (
             <div className="eval-detail-sheet">
               <div className="sheet-header">
                 <div>
-                  <div className="sheet-room-row">
-                    <span className="sheet-room-badge">{selectedPatient.room}</span>
-                    <span className="sheet-patient-id">{selectedPatient.id}</span>
-                  </div>
-                  <h2 className="sheet-title">{selectedPatient.name}</h2>
-                  <p className="sheet-subtitle">
-                    {selectedPatient.age} yo {selectedPatient.gender} • {selectedPatient.diagnosis}
+                  <span className="sheet-room-tag">{selectedPatient.room}</span>
+                  <h3 className="sheet-patient-title">{selectedPatient.name}</h3>
+                  <p className="sheet-patient-meta">
+                    {selectedPatient.age}y {selectedPatient.gender} • {selectedPatient.diagnosis}
                   </p>
                 </div>
 
                 <div className="sheet-vitals-box">
-                  <span className="vitals-box-label">VERIFIED VITALS</span>
-                  <span className="vitals-box-value">{selectedPatient.temperature}°F</span>
-                  <span className="vitals-box-signer">{selectedPatient.tempLoggedBy}</span>
+                  <span className="vitals-label">Temperature</span>
+                  <span className="vitals-number">{selectedPatient.temperature}°F</span>
+                  <span className="vitals-by">{selectedPatient.tempLoggedBy}</span>
                 </div>
               </div>
 
-              {/* Clinical Override / Clinical Hold Feature */}
-              <div className={`clinical-hold-control-box ${selectedPatient.clinicalHold ? 'hold-active-box' : ''}`}>
-                <div className="hold-header-row">
-                  <div className="hold-label-stack">
-                    <div className="hold-title-wrap">
-                      <ShieldAlert size={18} className={selectedPatient.clinicalHold ? 'text-amber' : 'text-slate-400'} />
-                      <h4 className="hold-title">Clinical Override / Clinical Hold</h4>
-                    </div>
-                    <p className="hold-desc">
-                      Flag patient as unstable despite lack of fever (e.g. labile hemodynamics, sepsis prodrome, post-op bleed).
-                    </p>
+              {/* Clinical Hold Toggle */}
+              <div className={`clinical-hold-card ${selectedPatient.clinicalHold ? 'hold-active' : ''}`}>
+                <div className="hold-header">
+                  <div>
+                    <h4>Clinical Hold</h4>
+                    <p className="hold-hint">Flag patient as unstable to prevent premature discharge.</p>
                   </div>
-
                   <button
-                    className={`toggle-override-switch ${selectedPatient.clinicalHold ? 'btn-hold-active' : 'btn-hold-inactive'}`}
+                    className={`hold-toggle-btn ${selectedPatient.clinicalHold ? 'btn-remove-hold' : 'btn-add-hold'}`}
                     onClick={() => handleToggleHold(selectedPatient)}
                   >
-                    {selectedPatient.clinicalHold ? 'REMOVE CLINICAL HOLD' : '+ ADD CLINICAL HOLD'}
+                    {selectedPatient.clinicalHold ? 'Remove Hold' : 'Add Clinical Hold'}
                   </button>
                 </div>
 
                 {selectedPatient.clinicalHold && (
-                  <div className="hold-active-details animate-fadeIn">
-                    <div className="active-hold-badge">
-                      ⚠️ CLINICAL HOLD ACTIVE — DISCHARGE BLOCKED UNTIL STABILIZED
-                    </div>
-                    <label className="hold-input-label">Override Reason / Alert Note:</label>
+                  <div className="hold-form">
+                    <label>Reason for Hold:</label>
                     <input
                       type="text"
-                      className="hold-input"
                       value={holdReasonInput}
                       onChange={(e) => setHoldReasonInput(e.target.value)}
-                      placeholder="Specify instability (e.g. Orthostatic drop, respiratory distress...)"
+                      placeholder="e.g. Labile blood pressure, serial labs pending..."
+                      className="hold-input-field"
                     />
                   </div>
                 )}
               </div>
 
-              {/* Doctor Consult Notes */}
-              <div className="doc-notes-section">
-                <label className="notes-label">Attending Clinical Notes & Plan:</label>
+              {/* Physician Notes */}
+              <div className="physician-notes-card">
+                <label>Clinical Notes & Orders:</label>
                 <textarea
-                  className="doc-notes-textarea"
                   rows={3}
                   value={consultNotesInput}
                   onChange={(e) => setConsultNotesInput(e.target.value)}
-                  placeholder="Enter assessment, lab orders, medication titration, or discharge criteria..."
+                  placeholder="Enter physician assessment, orders, and treatment plan..."
+                  className="notes-textarea"
                 />
                 <button
-                  className="save-notes-btn"
+                  className="btn-save-assessment"
                   onClick={() => handleSaveConsult(selectedPatient.id)}
                 >
-                  <FileText size={14} /> Complete & Save Assessment
+                  <FileText size={14} /> Save Assessment
                 </button>
               </div>
 
-              {/* Disposition and Handoff Relays */}
-              <div className="disposition-relay-box">
-                <h4 className="relay-title">Workflow Relay Actions</h4>
-                <p className="relay-sub">
-                  Protecting hospital capacity and ensuring immediate bed turnaround.
-                </p>
-
-                <div className="relay-action-grid">
+              {/* Disposition Actions */}
+              <div className="disposition-card">
+                <h4>Disposition</h4>
+                <div className="disposition-buttons">
                   <button
-                    className="relay-btn btn-discharge-order"
+                    className="btn-order-discharge"
                     disabled={selectedPatient.clinicalHold || selectedPatient.state === PATIENT_STATES.DISCHARGE_PENDING}
                     onClick={() => handleDischarge(selectedPatient.id)}
-                    title={selectedPatient.clinicalHold ? 'Remove Clinical Hold first' : 'Confirm Discharge Order'}
                   >
-                    <LogOut size={18} />
-                    <div className="btn-stack">
-                      <strong>Confirm Discharge Order</strong>
-                      <small>Triggers Instant Admin Bed Turnover Alert</small>
-                    </div>
+                    <LogOut size={16} />
+                    <span>Order Discharge</span>
                   </button>
 
                   <button
-                    className="relay-btn btn-mortality-record"
+                    className="btn-log-mortality"
                     onClick={() => handleMortality(selectedPatient.id)}
                   >
-                    <MinusCircle size={18} />
-                    <div className="btn-stack">
-                      <strong>Log Mortality Outcome</strong>
-                      <small>Recalculates Live Survival Thermometer</small>
-                    </div>
+                    <MinusCircle size={16} />
+                    <span>Record Mortality</span>
                   </button>
                 </div>
 
                 {selectedPatient.clinicalHold && (
-                  <div className="hold-disclaimer">
-                    <AlertCircle size={14} /> Discharge button disabled while Clinical Hold is active.
-                  </div>
+                  <p className="disposition-notice notice-hold">
+                    <AlertCircle size={13} /> Discharge is blocked while Clinical Hold is active.
+                  </p>
                 )}
                 {selectedPatient.state === PATIENT_STATES.DISCHARGE_PENDING && (
-                  <div className="discharge-sent-disclaimer">
-                    <CheckCircle size={14} /> Discharge confirmed. Terminal bed turnover alert dispatched to Admin!
-                  </div>
+                  <p className="disposition-notice notice-success">
+                    <CheckCircle size={13} /> Discharge confirmed. Bed turnover alert sent to Admin.
+                  </p>
                 )}
               </div>
             </div>
           ) : (
-            <div className="empty-selection-panel">
-              <Stethoscope size={48} className="text-slate-600" />
-              <h3>Select a Patient from Attending Rounds Inbox</h3>
-              <p>Only vitals-secured patients appear for rounding. Zero doctor time wasted on missing data.</p>
+            <div className="empty-selection-card">
+              <Stethoscope size={40} className="text-forest-light" />
+              <h4>Select a Patient</h4>
+              <p>Choose a patient with verified vitals from the inbox to begin rounds.</p>
             </div>
           )}
         </div>

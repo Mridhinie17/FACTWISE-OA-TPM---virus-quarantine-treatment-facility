@@ -9,34 +9,24 @@ import {
 } from './data/initialPatients';
 import { soundFx } from './utils/soundFx';
 import { 
-  Activity, 
-  UserCheck, 
-  Stethoscope, 
-  Building2, 
-  Sparkles, 
   RotateCcw, 
-  Volume2, 
-  VolumeX, 
-  Zap, 
-  ShieldCheck, 
-  AlertTriangle,
   PlusCircle,
   HelpCircle,
-  Layers,
-  ArrowRight
+  Zap,
+  Cross
 } from 'lucide-react';
 
 export default function App() {
   const [patients, setPatients] = useState(INITIAL_PATIENTS);
   const [historicalStats, setHistoricalStats] = useState(HISTORICAL_STATS);
-  const [activeTab, setActiveTab] = useState('NURSE'); // 'NURSE' | 'DOCTOR' | 'ADMIN' | 'RELAY_ENGINE'
+  const [activeTab, setActiveTab] = useState('NURSE'); // 'NURSE' | 'DOCTOR' | 'ADMIN' | 'ALL_ROLES'
   const [dischargeAlerts, setDischargeAlerts] = useState([
     { id: 'ALT-105', room: 'Room 105', patientName: 'Maria Gonzales', timestamp: '08:05 AM' }
   ]);
   const [duplicateAttemptsBlocked, setDuplicateAttemptsBlocked] = useState(6);
   const [soundMuted, setSoundMuted] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [showArchitectureGuide, setShowArchitectureGuide] = useState(false);
+  const [showInfoModal, setShowInfoModal] = useState(false);
 
   // New patient modal state
   const [newPatientRoom, setNewPatientRoom] = useState('Room 109');
@@ -112,7 +102,7 @@ export default function App() {
     );
   };
 
-  // 2b. Doctor: Complete consult / assessment
+  // 2b. Doctor: Complete consult
   const handleCompleteConsult = (patientId, notes) => {
     const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     setPatients((prev) =>
@@ -130,7 +120,7 @@ export default function App() {
     );
   };
 
-  // 2c. Doctor: Confirm Discharge -> Instant Admin Alert & Transition
+  // 2c. Doctor: Confirm Discharge
   const handleOrderDischarge = (patientId) => {
     const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const target = patients.find((p) => p.id === patientId);
@@ -162,7 +152,7 @@ export default function App() {
     );
   };
 
-  // 2d. Doctor: Log Mortality Event -> Live gauge update
+  // 2d. Doctor: Log Mortality Event
   const handleRecordMortality = (patientId) => {
     setPatients((prev) =>
       prev.map((p) => {
@@ -207,26 +197,22 @@ export default function App() {
     );
   };
 
-  // Quick Preset Scenarios for reviewer testing
+  // Test scenarios for reviewer
   const triggerScenario = (scenarioKey) => {
     soundFx.playTap();
     if (scenarioKey === 'SCENARIO_NURSE_TEMP') {
-      // Room 102 (Marcus Brody) gets 102.4°F logged
       handleRecordTemp('P-102', 102.4, 'Nurse Kelly (RN)', '07:30 AM');
       setActiveTab('DOCTOR');
     } else if (scenarioKey === 'SCENARIO_CLINICAL_HOLD') {
-      // Room 103 gets a Clinical Hold placed
-      handleAddClinicalHold('P-103', 'Severe bronchospasm, accessory muscle use noted.');
+      handleAddClinicalHold('P-103', 'Labile blood pressure, serial monitoring needed.');
       setActiveTab('DOCTOR');
     } else if (scenarioKey === 'SCENARIO_DISCHARGE_ALERT') {
-      // Room 103 discharged -> triggers Admin Alert
       handleOrderDischarge('P-103');
       setActiveTab('ADMIN');
     } else if (scenarioKey === 'SCENARIO_ANOMALY_FLAG') {
-      // Simulate cohort mortality spike to exceed 15%
       setHistoricalStats({
         pastDischarges: 12,
-        pastDeceased: 3 // 3 / (12 + 3 + 1) = 4 / 16 = 25% mortality -> triggers Amber Flag!
+        pastDeceased: 3
       });
       setActiveTab('ADMIN');
       soundFx.playWarning();
@@ -240,7 +226,7 @@ export default function App() {
     }
   };
 
-  // Handle admit new patient
+  // Admit new patient
   const handleAdmitSubmit = (e) => {
     e.preventDefault();
     if (!newPatientName.trim()) return;
@@ -277,132 +263,117 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      {/* Top Clinical Nav Header */}
+      {/* Clean Light Medical Header with Dark Green Brand */}
       <header className="app-header">
         <div className="header-brand">
-          <div className="brand-logo-ring">
-            <Activity size={22} className="logo-pulse" />
+          <div className="medical-logo-mark">
+            <svg viewBox="0 0 24 24" fill="none" className="cross-svg" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 4v16m-8-8h16" />
+            </svg>
           </div>
-          <div>
-            <div className="brand-title-wrap">
-              <h1 className="brand-title">PULSE RELAY OS</h1>
-              <span className="brand-badge">ASYNC RELAY ENGINE</span>
-            </div>
-            <p className="brand-sub">Eliminating Duplicate Effort • Out-of-Order Visits • Stagnant Beds</p>
+          <div className="brand-text-block">
+            <h1 className="brand-title">CareRelay</h1>
+            <span className="brand-dept">Clinical Portal</span>
           </div>
         </div>
 
-        {/* Global Controls & Test Presets */}
+        {/* Global Action Buttons */}
         <div className="header-actions">
           <button 
-            className="btn-info-toggle"
-            onClick={() => setShowArchitectureGuide(!showArchitectureGuide)}
-            title="Architecture Specs"
+            className="btn-header-secondary"
+            onClick={() => setShowInfoModal(!showInfoModal)}
+            title="Overview & Architecture"
           >
-            <HelpCircle size={16} />
-            <span>Architecture Specs</span>
+            <HelpCircle size={15} />
+            <span>Overview</span>
           </button>
 
           <button 
-            className="btn-admit-patient"
+            className="btn-header-primary"
             onClick={() => setShowAddModal(true)}
           >
-            <PlusCircle size={16} />
+            <PlusCircle size={15} />
             <span>Admit Patient</span>
           </button>
 
           <button 
-            className="btn-reset-demo"
+            className="btn-header-ghost"
             onClick={() => triggerScenario('RESET')}
-            title="Reset to default prototype state"
+            title="Reset prototype data"
           >
-            <RotateCcw size={15} />
-            <span>Reset Demo</span>
+            <RotateCcw size={14} />
+            <span>Reset</span>
           </button>
         </div>
       </header>
 
-      {/* Role Navigation Bar (Seamless switching between the 3 Handoff Roles + Live Simulation) */}
+      {/* Clean Navigation Tabs */}
       <nav className="role-navbar">
         <div className="nav-tabs-group">
           <button
-            className={`role-nav-tab ${activeTab === 'NURSE' ? 'active-nurse-tab' : ''}`}
+            className={`role-tab ${activeTab === 'NURSE' ? 'active-tab' : ''}`}
             onClick={() => {
               soundFx.playTap();
               setActiveTab('NURSE');
             }}
           >
-            <div className="tab-left-col">
-              <span className="tab-role-num">ROLE 01</span>
-              <span className="tab-role-name">Nurse Attending</span>
-            </div>
-            <span className="tab-bubble tab-bubble-nurse">
-              {patients.filter(p => p.state === PATIENT_STATES.AWAITING_TEMP).length} To Log
+            <span className="tab-title">Nurse</span>
+            <span className="tab-count-tag">
+              {patients.filter(p => p.state === PATIENT_STATES.AWAITING_TEMP).length} To Check
             </span>
           </button>
 
           <button
-            className={`role-nav-tab ${activeTab === 'DOCTOR' ? 'active-doctor-tab' : ''}`}
+            className={`role-tab ${activeTab === 'DOCTOR' ? 'active-tab' : ''}`}
             onClick={() => {
               soundFx.playTap();
               setActiveTab('DOCTOR');
             }}
           >
-            <div className="tab-left-col">
-              <span className="tab-role-num">ROLE 02</span>
-              <span className="tab-role-name">Attending Physician</span>
-            </div>
-            <span className="tab-bubble tab-bubble-doctor">
+            <span className="tab-title">Doctor</span>
+            <span className="tab-count-tag">
               {patients.filter(p => p.state === PATIENT_STATES.AWAITING_DOCTOR || p.state === PATIENT_STATES.EVALUATED).length} Ready
             </span>
           </button>
 
           <button
-            className={`role-nav-tab ${activeTab === 'ADMIN' ? 'active-admin-tab' : ''}`}
+            className={`role-tab ${activeTab === 'ADMIN' ? 'active-tab' : ''}`}
             onClick={() => {
               soundFx.playTap();
               setActiveTab('ADMIN');
             }}
           >
-            <div className="tab-left-col">
-              <span className="tab-role-num">ROLE 03</span>
-              <span className="tab-role-name">Admin & Ops</span>
-            </div>
-            <span className="tab-bubble tab-bubble-admin">
-              {dischargeAlerts.length > 0 ? `🔔 ${dischargeAlerts.length} Alert` : 'Guardrails'}
+            <span className="tab-title">Admin</span>
+            <span className="tab-count-tag">
+              {dischargeAlerts.length > 0 ? `${dischargeAlerts.length} Alert` : 'Overview'}
             </span>
           </button>
 
           <button
-            className={`role-nav-tab ${activeTab === 'RELAY_ENGINE' ? 'active-relay-tab' : ''}`}
+            className={`role-tab ${activeTab === 'ALL_ROLES' ? 'active-tab' : ''}`}
             onClick={() => {
               soundFx.playTap();
-              setActiveTab('RELAY_ENGINE');
+              setActiveTab('ALL_ROLES');
             }}
           >
-            <div className="tab-left-col">
-              <span className="tab-role-num">LIVE RELAY</span>
-              <span className="tab-role-name">All 3 Roles Relay</span>
-            </div>
-            <span className="tab-bubble tab-bubble-relay">
-              ⚡ Asynchronous View
-            </span>
+            <span className="tab-title">All Roles</span>
+            <span className="tab-count-tag">Combined</span>
           </button>
         </div>
       </nav>
 
-      {/* Quick Interactive Testing Bar for OA Reviewers */}
+      {/* Quick Test Scenarios Bar */}
       <div className="scenario-bar">
         <div className="scenario-label">
-          <Zap size={14} className="text-cyan" />
-          <span>Interactive Prototype Scenarios:</span>
+          <Zap size={14} className="text-forest" />
+          <span>Test Scenarios:</span>
         </div>
         <div className="scenario-buttons">
           <button 
             className="scenario-chip"
             onClick={() => triggerScenario('SCENARIO_NURSE_TEMP')}
           >
-            1. Log Fever 102.4°F (Room 102) & Lock
+            1. Log Fever 102.4°F (Room 102)
           </button>
           <button 
             className="scenario-chip"
@@ -414,61 +385,37 @@ export default function App() {
             className="scenario-chip"
             onClick={() => triggerScenario('SCENARIO_DISCHARGE_ALERT')}
           >
-            3. Order Discharge → Trigger Admin Alert
+            3. Order Discharge (Room 103)
           </button>
           <button 
             className="scenario-chip chip-anomaly"
             onClick={() => triggerScenario('SCENARIO_ANOMALY_FLAG')}
           >
-            4. Trigger Amber Mortality Anomaly (&gt;15%)
+            4. Mortality Anomaly (&gt;15%)
           </button>
         </div>
       </div>
 
-      {/* Architecture Specs Modal / Drawer */}
-      {showArchitectureGuide && (
-        <div className="guide-modal-backdrop" onClick={() => setShowArchitectureGuide(false)}>
-          <div className="guide-modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="guide-header">
-              <h2>Clinical Handoff Bottleneck Architecture Spec</h2>
-              <button className="guide-close-btn" onClick={() => setShowArchitectureGuide(false)}>✕</button>
+      {/* Overview Modal */}
+      {showInfoModal && (
+        <div className="modal-backdrop" onClick={() => setShowInfoModal(false)}>
+          <div className="modal-card modal-card-wide" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>System Overview</h3>
+              <button className="modal-close-btn" onClick={() => setShowInfoModal(false)}>✕</button>
             </div>
-            <div className="guide-body">
-              <div className="spec-section">
-                <h3>1. User Role: Nurse Attending</h3>
-                <p><strong>Design:</strong> Single-thumb operational speed. Nurses carry trays and wear PPE; cannot fiddle with complex nested navigation.</p>
-                <ul>
-                  <li><strong>Smart route queue:</strong> Patients are sorted not just by room number, but by urgency: unchecked rooms where temperature is needed first thing in the morning bubble to the top.</li>
-                  <li><strong>One-tap verification:</strong> Temperature entry interface with oversized quick-toggles and instant audio-haptic feedback.</li>
-                  <li><strong>Lockout Guard:</strong> Once submitted, the room card turns green and locks. This prevents redundant re-testing by another nurse patrolling the hall.</li>
-                </ul>
+            <div className="modal-body-text">
+              <div className="overview-block">
+                <h4>Nurse Station</h4>
+                <p>Designed for fast one-tap vitals entry. Unchecked rooms bubble to the top. Once confirmed, the room locks to prevent duplicate testing.</p>
               </div>
-
-              <div className="spec-section">
-                <h3>2. User Role: The Doctor Attending</h3>
-                <p><strong>Design:</strong> Protect doctor minutes. Doctors should never touch a thermometer or wait on data.</p>
-                <ul>
-                  <li><strong>Inbox filtering:</strong> Shows only patients whose morning temp is already logged.</li>
-                  <li><strong>Lockout / Warning:</strong> Any room lacking vitals is explicitly labeled: <em>"Awaiting Nurse - Do Not Enter"</em>.</li>
-                  <li><strong>Clinical Override:</strong> If a patient is clinically unstable despite lack of fever, doctor adds a Clinical Hold with one tap.</li>
-                </ul>
+              <div className="overview-block">
+                <h4>Doctor Rounds</h4>
+                <p>Physicians view only patients with verified morning vitals. Unchecked rooms show "Awaiting Nurse — Do Not Enter". Doctors can place clinical holds and confirm discharges.</p>
               </div>
-
-              <div className="spec-section">
-                <h3>3. User Role: The Admin</h3>
-                <p><strong>Design:</strong> Bed turnaround time and clinical survival guardrails.</p>
-                <ul>
-                  <li><strong>Instant Discharge Alert:</strong> The moment a doctor confirms discharge, an alert pops up on the admin screen.</li>
-                  <li><strong>Dynamic Mortality Thermometer:</strong> Live statistical tracking gauge. If rolling mortality climbs past 15%, system triggers an amber anomaly flag instructing team leads to audit treatment batches.</li>
-                </ul>
-              </div>
-
-              <div className="spec-section">
-                <h3>State Machine Enforcement</h3>
-                <p className="state-machine-code">
-                  <code>AWAITING_TEMP</code> ➔ <code>AWAITING_DOCTOR</code> ➔ <code>EVALUATED</code> (with Clinical Hold option) ➔ <code>DISCHARGE_PENDING</code> ➔ <code>BED_TURNOVER</code> ➔ <code>AVAILABLE</code>
-                </p>
-                <p><strong>Zero double dipping:</strong> Once logged, action buttons disable dynamically across all interfaces.</p>
+              <div className="overview-block">
+                <h4>Admin & Operations</h4>
+                <p>Real-time notifications for discharge bed cleaning, combined with a dynamic mortality thermometer that flags when rolling mortality exceeds 15%.</p>
               </div>
             </div>
           </div>
@@ -509,13 +456,10 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'RELAY_ENGINE' && (
-          <div className="relay-split-screen">
-            <div className="relay-column">
-              <div className="relay-col-title-bar nurse-bar">
-                <span>ROLE 01: NURSE ATTENDING</span>
-                <small>Single-Thumb Vitals & Lockout</small>
-              </div>
+        {activeTab === 'ALL_ROLES' && (
+          <div className="all-roles-split-screen">
+            <div className="role-column">
+              <div className="column-title-bar">Nurse</div>
               <NurseView
                 patients={patients}
                 onRecordTemp={handleRecordTemp}
@@ -525,11 +469,8 @@ export default function App() {
               />
             </div>
 
-            <div className="relay-column">
-              <div className="relay-col-title-bar doctor-bar">
-                <span>ROLE 02: ATTENDING PHYSICIAN</span>
-                <small>Protected Minutes & Clinical Override</small>
-              </div>
+            <div className="role-column">
+              <div className="column-title-bar">Doctor</div>
               <DoctorView
                 patients={patients}
                 onAddClinicalHold={handleAddClinicalHold}
@@ -540,11 +481,8 @@ export default function App() {
               />
             </div>
 
-            <div className="relay-column">
-              <div className="relay-col-title-bar admin-bar">
-                <span>ROLE 03: CLINICAL OPERATIONS & ADMIN</span>
-                <small>Bed Turnover & Mortality Thermometer</small>
-              </div>
+            <div className="role-column">
+              <div className="column-title-bar">Admin</div>
               <AdminView
                 patients={patients}
                 historicalStats={historicalStats}
@@ -563,12 +501,12 @@ export default function App() {
         <div className="modal-backdrop" onClick={() => setShowAddModal(false)}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Admit New Patient to Cohort</h3>
+              <h3>Admit Patient</h3>
               <button className="modal-close-btn" onClick={() => setShowAddModal(false)}>✕</button>
             </div>
             <form onSubmit={handleAdmitSubmit} className="modal-form">
               <div className="form-group">
-                <label>Assigned Bed / Room:</label>
+                <label>Assigned Room:</label>
                 <input
                   type="text"
                   value={newPatientRoom}
@@ -578,7 +516,7 @@ export default function App() {
                 />
               </div>
               <div className="form-group">
-                <label>Patient Full Name:</label>
+                <label>Patient Name:</label>
                 <input
                   type="text"
                   value={newPatientName}
@@ -588,32 +526,32 @@ export default function App() {
                 />
               </div>
               <div className="form-group">
-                <label>Clinical Diagnosis / Condition:</label>
+                <label>Diagnosis / Condition:</label>
                 <input
                   type="text"
                   value={newPatientDiagnosis}
                   onChange={(e) => setNewPatientDiagnosis(e.target.value)}
-                  placeholder="e.g. Diabetic Ketoacidosis (DKA)"
+                  placeholder="e.g. Post-op Observation"
                   required
                 />
               </div>
               <div className="form-group">
-                <label>Initial Vitals Urgency:</label>
+                <label>Urgency Level:</label>
                 <select
                   value={newPatientUrgency}
                   onChange={(e) => setNewPatientUrgency(e.target.value)}
                 >
-                  <option value="CRITICAL">CRITICAL (Fever / Sepsis Risk)</option>
-                  <option value="HIGH">HIGH (Post-op / Priority)</option>
-                  <option value="NORMAL">NORMAL (Routine Morning)</option>
+                  <option value="CRITICAL">Critical (High Priority)</option>
+                  <option value="HIGH">High</option>
+                  <option value="NORMAL">Normal</option>
                 </select>
               </div>
               <div className="modal-actions">
                 <button type="button" className="btn-cancel" onClick={() => setShowAddModal(false)}>
                   Cancel
                 </button>
-                <button type="submit" className="btn-admit-confirm">
-                  Confirm Admission to Queue
+                <button type="submit" className="btn-confirm-admit">
+                  Admit Patient
                 </button>
               </div>
             </form>
